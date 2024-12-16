@@ -34,4 +34,4 @@ RUN mkdir -p rna_data output transcripts/arch
 COPY scripts/main.sh /data/main.sh
 COPY scripts/index_transcript.sh /data/index_transcript.sh
 
-ENTRYPOINT ["/data/main.sh"]
+CMD ["/data/main.sh"]

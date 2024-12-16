@@ -1,8 +1,20 @@
 #!/bin/bash
 
+log_info() {
+    echo -e "[INFO] $1"
+}
+
+log_error() {
+    echo -e "\033[31m[ERROR] $1\033[0m" >&2
+}
+
+log_warn() {
+    echo -e "\033[33m[WARN] $1\033[0m" >&2
+}
+
 check_args() {
     if [ $# -ne 1 ]; then
-        echo "Usage: $0 <TRANSCRIPT_LINK>"
+        log_warn "Usage: $0 <TRANSCRIPT_LINK>"
         exit 1
     fi
 }
@@ -18,26 +30,26 @@ initialize_vars() {
 download_transcript() {
     local transcript_link=$1
     local trans_dir=$2
-    local arch_name=$3
+    local arch_name=$3 
 
-    cd "$trans_dir" || { echo "Failed to cd into $trans_dir"; return 1; }
+    cd "$trans_dir" || { log_error "Failed to cd into $trans_dir"; return 1; }
 
     if [ ! -f "arch/$arch_name" ]; then
-        echo -e "\033[33mDownloading transcript from $transcript_link...\033[0m"
+        log_info "Downloading transcript from $transcript_link..."
         wget -q "$transcript_link" 
         if [ $? -ne 0 ]; then
-            echo "Failed to download the transcript."
+            log_error "Failed to download the transcript."
             return 1
         fi
     else
-        echo -e "\033[32mTranscript file already exists, moving to arch directory...\033[0m"
+        log_info "Transcript file already exists, moving to arch directory..."
         mv "arch/$arch_name" .
     fi
 
-    echo -e "\033[33mCreating kallisto index for $arch_name...\033[0m"
+    log_info "Creating kallisto index for $arch_name..."
     kallisto index -i "$arch_name.idx" "$arch_name"
     if [ $? -ne 0 ]; then
-        echo "Failed to create the index."
+        log_error "Failed to create the index."
         mv "$arch_name" arch/
         return 1
     fi
@@ -50,21 +62,19 @@ download_transcript() {
 
 main() {
     check_args "$@" 
-
     IFS=" " read -r TRANSCRIPT_LINK TRANS_DIR ARCH_NAME <<< $(initialize_vars "$1")
 
     if [ ! -f "$TRANS_DIR/$ARCH_NAME.idx" ]; then
-        echo -e "\033[33m$ARCH_NAME.idx not found. Downloading and creating the index...\033[0m"
-    
+        log_info "$ARCH_NAME.idx not found. Downloading and creating the index..." 
         download_transcript "$TRANSCRIPT_LINK" "$TRANS_DIR" "$ARCH_NAME"
         if [ $? -ne 0 ]; then
-            echo -e "\033[31mFailed to download or create the index. Exiting...\033[0m"
+            log_error "Failed to download or create the index. Exiting..."
             return 1
         else
-            echo -e "\033[32mIndex created and transcript file moved.\033[0m"
+            log_info "Index created and transcript file moved."
         fi
     else
-        echo -e "\033[32m$ARCH_NAME.idx already exists. Skipping download and index creation.\033[0m"
+        log_info "$ARCH_NAME.idx already exists. Skipping download and index creation."
     fi
 }
 
